@@ -63,16 +63,21 @@ def run_spark_job(spark):
     ).count()
     
     
-    converted_df = counts_df.withColumn(
-        "call_datetime", udf_convert_time(counts_df.call_datetime))
-    
-    calls_per_2_days = converted_df \
-            .groupBy(
-                psf.window(converted_df.call_date_time, "2 day")
-            ).agg(psf.count("crime_id").alias("calls_per_2_day")).select("calls_per_2_day")
+    converted_df = distinct_table.withColumn(
+        "call_date_time", udf_convert_time(distinct_table.call_datetime))
+    # converted_df.printSchema()
 
-    query = service_table.writeStream \
-        .outputMode('append') \
+    # apply aggregations using windows function to see how many calls occurred in 2 day span
+    calls_per_2_days = converted_df \
+        .withWatermark("call_datetime", "2 day") \
+        .groupBy(
+        psf.window(converted_df.call_date_time, "2 day")
+    ).agg(psf.count("crime_id").alias("calls_per_2_day")).select("calls_per_2_day")
+    # calls_per_2_days.printSchema()
+
+    
+    query = calls_per_2_days.writeStream \
+        .outputMode('complete') \
         .format('console') \
         .start()
 
@@ -91,6 +96,3 @@ if __name__ == "__main__":
     run_spark_job(spark)
 
     spark.stop()
-
-
-
