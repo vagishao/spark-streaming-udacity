@@ -64,7 +64,7 @@ def run_spark_job(spark):
     
     
     converted_df = counts_df.withColumn(
-        "call_date_time", udf_convert_time(counts_df.call_date_time))
+        "call_datetime", udf_convert_time(counts_df.call_datetime))
     
     calls_per_2_days = converted_df.withWatermark("call_datetime", "60 minutes") \
             .groupBy(
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
 
     spark = SparkSession.builder \
-        .master("local[*]") \
+        .master("local") \
         .appName("SFCrimeStatistics").getOrCreate()
 
     logger.info("Spark started")
