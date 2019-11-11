@@ -66,13 +66,13 @@ def run_spark_job(spark):
     converted_df = counts_df.withColumn(
         "call_datetime", udf_convert_time(counts_df.call_datetime))
     
-    calls_per_2_days = converted_df.withWatermark("call_datetime", "60 minutes") \
+    calls_per_2_days = converted_df \
             .groupBy(
                 psf.window(converted_df.call_date_time, "2 day")
             ).agg(psf.count("crime_id").alias("calls_per_2_day")).select("calls_per_2_day")
 
-    query = calls_per_2_days.writeStream \
-        .outputMode('Complete') \
+    query = service_table.writeStream \
+        .outputMode('append') \
         .format('console') \
         .start()
 
